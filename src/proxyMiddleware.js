@@ -7,29 +7,36 @@ const { logProxiedRequest } = require('./logger');
  *
  * Contract: every request that should be routed through the orchestrator
  * must carry:
- *   x-to-service:   logical name of the destination (looked up in routeStore)
- *   x-from-service: logical name of the caller (used only for logging/observability)
+ *   x-to-service:   logical name of the destination
+ *   x-from-service: logical name of the caller (both are Required)
  *
- * The actual target for `x-to-service` is resolved from `routeStore` on
- * *every* request, so changing a route via the admin API takes effect
- * immediately on the next request - no restart needed.
+ * The target is resolved from `routeStore` as the (from, to) pair on
+ * *every* request - falling back to the wildcard ("*", to) route if the
+ * caller has no explicit override - so changing a route via the admin API
+ * takes effect immediately on the next request, and redirecting one
+ * caller's traffic never affects other callers of the same destination.
  */
 function createOrchestratorProxy(routeStore) {
   // 1) Validate + resolve the target before handing off to the proxy.
   function resolveTarget(req, res, next) {
     const to = req.headers['x-to-service'];
-    const from = req.headers['x-from-service'] || 'unknown';
+    const from = req.headers['x-from-service'];
 
     if (!to) {
       return res.status(400).json({
         error: 'Missing required "x-to-service" header. The orchestrator needs to know which logical service to route this request to.',
       });
     }
+    if (!from) {
+      return res.status(400).json({
+        error: 'Missing required "x-from-service" header. The orchestrator needs to know which caller is making this request, since routes are per (from, to) pair.',
+      });
+    }
 
-    const route = routeStore.get(to);
+    const route = routeStore.resolve(from, to);
     if (!route) {
       return res.status(404).json({
-        error: `Unknown target service "${to}". Register it first via PUT /api/routes/${to}.`,
+        error: `No route for "${from}" -> "${to}". Register one via PUT /api/routes/${from}/${to}, or a fallback for any caller via PUT /api/routes/*/${to}.`,
       });
     }
 

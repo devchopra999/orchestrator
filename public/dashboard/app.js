@@ -5,7 +5,11 @@ const connLabel = document.getElementById('conn-label');
 const toastContainer = document.getElementById('toast-container');
 const addForm = document.getElementById('add-route-form');
 
-let routes = new Map(); // service -> { target, updatedAt }
+let routes = new Map(); // "from\u0000to" -> { from, to, target, updatedAt }
+
+function routeKey(from, to) {
+  return `${from}\u0000${to}`;
+}
 
 function fmtTime(iso) {
   if (!iso) return '-';
@@ -23,15 +27,16 @@ function showToast(message, isError = false) {
 
 function renderRoutes() {
   if (routes.size === 0) {
-    routesBody.innerHTML = '<tr class="empty-row"><td colspan="4">No routes registered yet.</td></tr>';
+    routesBody.innerHTML = '<tr class="empty-row"><td colspan="5">No routes registered yet.</td></tr>';
     return;
   }
 
-  const rows = Array.from(routes.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([service, entry]) => `
-      <tr data-service="${service}">
-        <td class="svc-name">${service}</td>
+  const rows = Array.from(routes.values())
+    .sort((a, b) => a.to.localeCompare(b.to) || a.from.localeCompare(b.from))
+    .map((entry) => `
+      <tr data-from="${entry.from}" data-to="${entry.to}">
+        <td class="svc-name">${entry.from}</td>
+        <td class="svc-name">${entry.to}</td>
         <td class="target-cell"><input type="text" value="${entry.target}" data-role="target-input" /></td>
         <td class="updated-cell">${fmtTime(entry.updatedAt)}</td>
         <td>
@@ -77,12 +82,12 @@ function renderActivity(entry) {
 async function loadRoutes() {
   const res = await fetch('/api/routes');
   const data = await res.json();
-  routes = new Map(data.map((r) => [r.service, { target: r.target, updatedAt: r.updatedAt }]));
+  routes = new Map(data.map((r) => [routeKey(r.from, r.to), r]));
   renderRoutes();
 }
 
-async function upsertRoute(service, target) {
-  const res = await fetch(`/api/routes/${encodeURIComponent(service)}`, {
+async function upsertRoute(from, to, target) {
+  const res = await fetch(`/api/routes/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ target }),
@@ -92,41 +97,43 @@ async function upsertRoute(service, target) {
     showToast(data.error || 'Failed to save route', true);
     return false;
   }
-  showToast(`Route "${service}" → ${target}`);
+  showToast(`Route "${from}" → "${to}" → ${target}`);
   return true;
 }
 
-async function deleteRoute(service) {
-  const res = await fetch(`/api/routes/${encodeURIComponent(service)}`, { method: 'DELETE' });
+async function deleteRoute(from, to) {
+  const res = await fetch(`/api/routes/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, { method: 'DELETE' });
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({}));
     showToast(data.error || 'Failed to remove route', true);
     return;
   }
-  showToast(`Route "${service}" removed`);
+  showToast(`Route "${from}" → "${to}" removed`);
 }
 
 routesBody.addEventListener('click', async (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
   const row = e.target.closest('tr');
-  const service = row.dataset.service;
+  const { from, to } = row.dataset;
 
   if (btn.dataset.action === 'save') {
     const input = row.querySelector('[data-role="target-input"]');
-    await upsertRoute(service, input.value.trim());
+    await upsertRoute(from, to, input.value.trim());
   } else if (btn.dataset.action === 'delete') {
-    await deleteRoute(service);
+    await deleteRoute(from, to);
   }
 });
 
 addForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+  const from = document.getElementById('new-from').value.trim();
   const service = document.getElementById('new-service').value.trim();
   const target = document.getElementById('new-target').value.trim();
-  if (!service || !target) return;
-  const ok = await upsertRoute(service, target);
+  if (!from || !service || !target) return;
+  const ok = await upsertRoute(from, service, target);
   if (ok) {
+    document.getElementById('new-from').value = '';
     document.getElementById('new-service').value = '';
     document.getElementById('new-target').value = '';
   }
@@ -146,13 +153,13 @@ function connectEvents() {
 
   es.addEventListener('route_changed', (e) => {
     const data = JSON.parse(e.data);
-    routes.set(data.service, { target: data.target, updatedAt: data.updatedAt });
+    routes.set(routeKey(data.from, data.to), data);
     renderRoutes();
   });
 
   es.addEventListener('route_removed', (e) => {
     const data = JSON.parse(e.data);
-    routes.delete(data.service);
+    routes.delete(routeKey(data.from, data.to));
     renderRoutes();
   });
 

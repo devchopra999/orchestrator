@@ -5,7 +5,7 @@ const { RouteStore } = require('./src/routeStore');
 const { createAdminApi } = require('./src/adminApi');
 const { createOrchestratorProxy } = require('./src/proxyMiddleware');
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 9000;
 
 const app = express();
 const routeStore = new RouteStore();

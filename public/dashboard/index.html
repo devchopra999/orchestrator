@@ -27,11 +27,12 @@
     <section class="panel routes-panel">
       <div class="panel-head">
         <h2>Routes</h2>
-        <span class="hint">Where each logical service currently points</span>
+        <span class="hint">Which caller's traffic to each destination points where</span>
       </div>
 
       <form id="add-route-form" class="add-route-form">
-        <input id="new-service" type="text" placeholder="service name (e.g. axis-api)" required autocomplete="off" />
+        <input id="new-from" type="text" placeholder="from (e.g. edi, or * for any caller)" required autocomplete="off" />
+        <input id="new-service" type="text" placeholder="to (e.g. axis-api)" required autocomplete="off" />
         <input id="new-target" type="text" placeholder="target URL (e.g. http://mock-server:8080)" required autocomplete="off" />
         <button type="submit">Add / Update</button>
       </form>
@@ -40,14 +41,15 @@
         <table id="routes-table">
           <thead>
             <tr>
-              <th>Service</th>
+              <th>From</th>
+              <th>To</th>
               <th>Target</th>
               <th>Updated</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="routes-body">
-            <tr class="empty-row"><td colspan="4">No routes registered yet.</td></tr>
+            <tr class="empty-row"><td colspan="5">No routes registered yet.</td></tr>
           </tbody>
         </table>
       </div>
