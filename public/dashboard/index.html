@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Praxis Lens · Orchestrator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <div>
+        <h1>Praxis Lens</h1>
+        <p>Runtime Orchestrator</p>
+      </div>
+    </div>
+    <div class="conn" id="conn-status">
+      <span class="dot"></span>
+      <span id="conn-label">connecting…</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel routes-panel">
+      <div class="panel-head">
+        <h2>Routes</h2>
+        <span class="hint">Where each logical service currently points</span>
+      </div>
+
+      <form id="add-route-form" class="add-route-form">
+        <input id="new-service" type="text" placeholder="service name (e.g. axis-api)" required autocomplete="off" />
+        <input id="new-target" type="text" placeholder="target URL (e.g. http://mock-server:8080)" required autocomplete="off" />
+        <button type="submit">Add / Update</button>
+      </form>
+
+      <div class="table-wrap">
+        <table id="routes-table">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Target</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="routes-body">
+            <tr class="empty-row"><td colspan="4">No routes registered yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel activity-panel">
+      <div class="panel-head">
+        <h2>Live Activity</h2>
+        <span class="hint">Requests flowing through the orchestrator</span>
+      </div>
+      <div id="activity-feed" class="activity-feed">
+        <div class="empty-feed">Waiting for traffic…</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "praxis-orchestrator",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dynamic reverse-proxy orchestrator for Praxis Lens - lets an agent redirect service-to-service traffic at runtime.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "example:a": "node examples/serviceA.js",
+    "example:b": "node examples/serviceB.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "http-proxy-middleware": "^3.0.3"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.5"
+  }
+}
