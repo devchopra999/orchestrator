@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 
 const { RouteStore } = require('./src/routeStore');
+const { NameLabelStore } = require('./src/nameLabelStore');
 const { createAdminApi } = require('./src/adminApi');
 const { createOrchestratorProxy } = require('./src/proxyMiddleware');
 
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 9000;
 
 const app = express();
 const routeStore = new RouteStore();
+const nameLabelStore = new NameLabelStore();
 
 app.use(express.json());
 
@@ -22,7 +24,7 @@ app.get('/healthz', (req, res) => {
 app.use('/', express.static(path.join(__dirname, 'public', 'dashboard')));
 
 // Control plane: REST + SSE for managing routes at runtime.
-app.use('/api', createAdminApi(routeStore));
+app.use('/api', createAdminApi(routeStore, nameLabelStore));
 
 // Data plane: everything else is treated as service-to-service traffic and
 // proxied according to the `x-from-service` / `x-to-service` headers.

@@ -64,10 +64,28 @@
         <div class="empty-feed">Waiting for traffic…</div>
       </div>
     </section>
+
+    <section class="panel flowmap-panel">
+      <div class="panel-head">
+        <h2>Flow Map</h2>
+        <span class="hint">Caller → target chains, followed recursively wherever a target is itself another caller. Click any node to rename it.</span>
+      </div>
+      <div class="fm-legend">
+        <span class="fm-legend-item"><span class="fm-legend-dot root"></span>Caller</span>
+        <span class="fm-legend-item"><span class="fm-legend-dot chain"></span>Chained hop</span>
+        <span class="fm-legend-item"><span class="fm-legend-dot leaf"></span>Endpoint</span>
+        <span class="fm-legend-item"><span class="fm-legend-dot cycle"></span>Cycle detected</span>
+      </div>
+      <div class="flowmap-wrap">
+        <svg id="flow-map"></svg>
+        <div id="flowmap-empty" class="empty-feed fm-empty">No routes registered yet — add one above to see the flow map.</div>
+      </div>
+    </section>
   </main>
 
   <div id="toast-container" class="toast-container"></div>
 
+  <script src="vendor/d3.v7.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

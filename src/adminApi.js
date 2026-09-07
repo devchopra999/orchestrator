@@ -29,7 +29,7 @@ function isValidTarget(target) {
  * register a fallback that applies to any caller without its own explicit
  * override, e.g. `PUT /api/routes/*\/axis-api`.
  */
-function createAdminApi(routeStore) {
+function createAdminApi(routeStore, nameLabelStore) {
   const router = express.Router();
 
   router.get('/routes', (req, res) => {
@@ -114,6 +114,36 @@ function createAdminApi(routeStore) {
     res.status(204).end();
   });
 
+  // General raw-value -> friendly label mapping used by the Flow Map
+  // dashboard panel. Purely cosmetic (doesn't affect routing or the Flow
+  // Map's chain-following logic, which is derived straight from the raw
+  // route data) - lets any `from` name or raw target URL display as a
+  // friendlier label, e.g. "http://mock-server:8080" -> "Mock Server".
+  router.get('/labels', (req, res) => {
+    res.json(nameLabelStore.getAll());
+  });
+
+  router.put('/labels/:key', (req, res) => {
+    const { key } = req.params;
+    const { label } = req.body || {};
+
+    if (!label || typeof label !== 'string' || !label.trim()) {
+      return res.status(400).json({ error: '"label" (non-empty string) is required in the request body.' });
+    }
+
+    const entry = nameLabelStore.set(key, label.trim());
+    res.json(entry);
+  });
+
+  router.delete('/labels/:key', (req, res) => {
+    const { key } = req.params;
+    const existed = nameLabelStore.remove(key);
+    if (!existed) {
+      return res.status(404).json({ error: `No label registered for "${key}".` });
+    }
+    res.status(204).end();
+  });
+
   // Live activity + route-change feed for the dashboard (and later, the
   // Praxis Lens TUI). Plain Server-Sent Events, no extra dependency needed.
   router.get('/events', (req, res) => {
@@ -131,10 +161,14 @@ function createAdminApi(routeStore) {
     const onRouteChanged = (data) => send('route_changed', data);
     const onRouteRemoved = (data) => send('route_removed', data);
     const onRequestProxied = (data) => send('request_proxied', data);
+    const onLabelChanged = (data) => send('label_changed', data);
+    const onLabelRemoved = (data) => send('label_removed', data);
 
     eventBus.on('route_changed', onRouteChanged);
     eventBus.on('route_removed', onRouteRemoved);
     eventBus.on('request_proxied', onRequestProxied);
+    eventBus.on('label_changed', onLabelChanged);
+    eventBus.on('label_removed', onLabelRemoved);
 
     // Keep the connection alive through proxies/load balancers.
     const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 25000);
@@ -144,6 +178,8 @@ function createAdminApi(routeStore) {
       eventBus.off('route_changed', onRouteChanged);
       eventBus.off('route_removed', onRouteRemoved);
       eventBus.off('request_proxied', onRequestProxied);
+      eventBus.off('label_changed', onLabelChanged);
+      eventBus.off('label_removed', onLabelRemoved);
     });
   });
 
